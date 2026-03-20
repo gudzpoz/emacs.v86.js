@@ -24,20 +24,29 @@
 FROM docker.io/i386/alpine:3.23.0
 
 ENV KERNEL=virt
-ARG ADDPKGS=emacs-nox
+ARG ADDPKGS="git emacs-nox"
+ARG REMPKGS="git"
+ARG DOT_EMACS_D=build/spacemacs-develop
+ARG DOT_EMACS_SRC=build/dotspacemacs-template.el
+ARG DOT_EMACS_DST=/root/.spacemacs
+ARG EMACS_INIT_FILE=/root/.emacs.d/init.el
 
 RUN apk --no-cache add openrc alpine-base agetty alpine-conf linux-$KERNEL linux-firmware-none $ADDPKGS
+ADD $DOT_EMACS_D /root/.emacs.d
+ADD $DOT_EMACS_SRC $DOT_EMACS_DST
+RUN /usr/bin/emacs --batch -l $EMACS_INIT_FILE \
+    || /usr/bin/emacs --batch -l $EMACS_INIT_FILE \
+    || /usr/bin/emacs --batch -l $EMACS_INIT_FILE
+RUN apk --no-cache del $REMPKGS
 
 RUN sed -i 's/getty 38400 tty1/agetty --autologin root tty1 linux/' /etc/inittab
-RUN echo 'ttyS0::respawn:/sbin/agetty --autologin root -s ttyS0 115200 vt100' >> /etc/inittab
+RUN echo 'ttyS0::respawn:/sbin/agetty --autologin root -s ttyS0 115200 linux' >> /etc/inittab
 RUN echo "root:" | chpasswd
 
 RUN setup-hostname localhost
 
 # Adding networking.sh script
 RUN echo -e "rmmod ne2k-pci && modprobe ne2k-pci\nrmmod virtio-net && modprobe virtio-net\nhwclock -s\nsetup-interfaces -a -r" > /root/networking.sh && chmod +x /root/networking.sh
-
-RUN echo 'console.log("Hello, world!");' > /root/hello.js
 
 # https://wiki.alpinelinux.org/wiki/Alpine_Linux_in_a_chroot#Preparing_init_services
 RUN for i in devfs dmesg mdev hwdrivers; do rc-update add $i sysinit; done
