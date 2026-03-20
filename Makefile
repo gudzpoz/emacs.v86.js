@@ -50,7 +50,9 @@ $(STATE_MINI): $(FS_EXPORT) scripts/build-state.js
 $(STATE_NORM): $(FS_EXPORT) scripts/build-state.js
 	scripts/build-state.js "$<" "$(FS_DIR)" "$@" \
 		"$(EMACS_ENV) emacs -q --daemon" \
-		"$(EMACS_ENV) emacsclient -c --eval \"(run-with-idle-timer 10 nil #'suspend-frame)\""
+		"$(EMACS_ENV) emacsclient -c \
+		  --eval \"(fancy-startup-screen)\" \
+		  --eval \"(run-with-idle-timer 10 nil #'suspend-frame)\""
 
 $(STATE_FULL): $(FS_EXPORT) scripts/build-state.js
 	scripts/build-state.js "$<" "$(FS_DIR)" "$@" \

@@ -33,6 +33,7 @@ html, body {
 #head > * {
   display: flex;
   align-items: center;
+  gap: 4px;
 }
 #head a {
   color: #b2b2b2;
@@ -61,16 +62,21 @@ a.logo {
         <div>
           <label>
             <input type="radio" name="variant" value="norm">
-            Running Emacs
+            Emacs
           </label>
           <label>
             <input type="radio" name="variant" value="mini">
-            Running <code>emacs -Q</code>
+            <code>emacs -Q</code>
           </label>
           <label>
             <input type="radio" name="variant" value="full">
-            Running Spacemacs
+            Spacemacs
           </label>
+          <label>
+            <input type="checkbox" id="ctrl">
+            <code>Ctrl</code>
+          </label>
+          <button id="question">?</button>
         </div>
         <div>
           <a href="https://github.com/copy/v86" target="_blank">

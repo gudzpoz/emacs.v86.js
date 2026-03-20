@@ -1,4 +1,4 @@
-#+title: emacs-playground
+#+title: emacs.v86.js
 
 Emacs on [[https://github.com/copy/v86][copy/v86]] in your browser.
 

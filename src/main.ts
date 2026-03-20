@@ -2,6 +2,7 @@ import debounce from 'debounce';
 import { V86 } from 'v86';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
+import { controlChar } from './keys';
 
 import v86wasm from 'v86/build/v86.wasm?url';
 import v86bios from '../v86/bios/seabios.bin?url';
@@ -86,6 +87,23 @@ VARIANT_INPUTS.forEach((i) => {
   });
 });
 
+
+const CTRL = document.getElementById('ctrl')! as HTMLInputElement;
+CTRL.checked = false;
+
+
+const QUESTION = document.getElementById('question')!;
+QUESTION.addEventListener('click', () => {
+  alert(`An Emacs playground running on v86 in your browser.
+
+0. v86 runs a virtual machine, so expect it to be slow.
+1. Browsers prevent us from capturing Ctrl+q/n/t/w, etc.
+   So, instead, you might need to use the "Ctrl" checkbox
+   in the header. You may press Ctrl to toggle it.
+`);
+});
+
+
 (async () => {
 
   const init = await fetchMaybeCompressed(`/state-${VARIANT}.bin`);
@@ -137,6 +155,42 @@ VARIANT_INPUTS.forEach((i) => {
     }, 500);
     syncResize();
     window.addEventListener('resize', syncResize);
+
+    let capturedDown: string | null = null;
+    let lastIsCtrlDown = false;
+    CTRL.addEventListener('change', () => terminal.focus());
+    terminal.attachCustomKeyEventHandler((event) => {
+      if (event.key === 'Control') {
+        if (event.type === 'keydown') {
+          lastIsCtrlDown = true;
+          return true;
+        }
+        if (event.type === 'keyup' && lastIsCtrlDown) {
+          CTRL.checked = !CTRL.checked;
+        }
+      }
+      lastIsCtrlDown = false;
+
+      if (event.type === 'keydown' && CTRL.checked) {
+        CTRL.checked = false;
+        if (event.key.length === 1) {
+          const escaped = controlChar(event.key.charCodeAt(0));
+          console.log(escaped);
+          emulator.serial_send_bytes(0, new Uint8Array([escaped]));
+          capturedDown = event.key;
+          return false;
+        }
+      }
+      if (event.type === 'keypress' && capturedDown === event.key) {
+        return false;
+      }
+      if (event.type === 'keyup' && capturedDown === event.key) {
+        capturedDown = null;
+        return false;
+      }
+
+      return true;
+    });
   });
   emulator.add_listener('emulator-ready', () => {
     if (!emulator.is_running()) {
