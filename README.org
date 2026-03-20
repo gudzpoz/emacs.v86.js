@@ -1,0 +1,10 @@
+#+title: emacs-playground
+
+Emacs on [[https://github.com/copy/v86][copy/v86]] in your browser.
+
+* Build
+
+- Run =make= to generate all the needed files
+  (v86 file system & warmed-up state files).
+
+- Run =pnpm install= and then =pnpm build= to generate the site.

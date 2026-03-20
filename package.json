@@ -1,5 +1,5 @@
 {
-  "name": "emacs-playground",
+  "name": "emacs.v86.js",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -13,6 +13,7 @@
     "vite": "^8.0.1"
   },
   "dependencies": {
+    "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
     "v86": "^0.5.319"
   }
