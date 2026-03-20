@@ -34,7 +34,9 @@ jobs:
           mkdir -p build
           make all
       - name: Build site
-        run: pnpm build
+        run: |
+          make prepare-cf
+          pnpm build
 
       - uses: cloudflare/wrangler-action@v3
         name: Deploy pages

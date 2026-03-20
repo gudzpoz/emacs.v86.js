@@ -9,6 +9,7 @@ STATE_FULL=public/state-full.bin
 STATES_GZIP=$(STATE_MINI).gzip $(STATE_FULL).gzip
 STATES_BROTLI=$(STATE_MINI).brotli $(STATE_FULL).brotli
 STATES=$(STATE_MINI) $(STATE_FULL) $(STATES_GZIP) $(STATES_BROTLI)
+STATES_EXPORT=src/states.json
 
 SPACEMACS_URL=https://github.com/syl20bnr/spacemacs/archive/refs/heads/develop.zip
 SPACEMACS=build/spacemacs.zip
@@ -18,7 +19,7 @@ DOT_SPACEMACS=build/dotspacemacs-template.el
 TERM_ENV=LANG=C.UTF-8 COLORTERM=truecolor
 EMACS_ENV=$(TERM_ENV)
 
-all: $(FS_EXPORT) $(STATES)
+all: $(FS_EXPORT) $(STATES) $(STATES_EXPORT)
 
 $(SPACEMACS):
 	wget -O "$@" "$(SPACEMACS_URL)"
@@ -56,3 +57,12 @@ public/state-%.bin.gzip: public/state-%.bin
 
 public/state-%.bin.brotli: public/state-%.bin
 	brotli -f --best --suffix=.brotli "$<"
+
+$(STATES_EXPORT): $(STATES) scripts/split-states.js
+	scripts/split-states.js "$@" $^
+
+# Remove files larger than 25 MB after chunking
+prepare-cf: $(STATES_EXPORT)
+	find public -type f -size +25M -exec rm {} \;
+
+.PHONY: all prepare-cf

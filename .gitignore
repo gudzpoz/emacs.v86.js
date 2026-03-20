@@ -3,8 +3,8 @@ build/
 public/rootfs/
 public/rootfs.json
 public/state-*.bin
-public/state-*.bin.gzip
-public/state-*.bin.brotli
+public/state-*.bin.*
+src/states.json
 UT_ROOTFS_TAR
 
 # Logs

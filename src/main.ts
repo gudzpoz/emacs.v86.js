@@ -6,6 +6,7 @@ import v86wasm from 'v86/build/v86.wasm?url';
 import v86bios from '../v86/bios/seabios.bin?url';
 import v86vgabios from '../v86/bios/vgabios.bin?url';
 
+import CHUNKS_UNTYPED from './states.json';
 import '@xterm/xterm/css/xterm.css';
 import './style.css';
 
@@ -18,13 +19,28 @@ const COMPRESSIONS: CompressionFormat[] = import.meta.env.DEV ? [] : [
   'brotli' as CompressionFormat,
   'gzip',
 ];
+const CHUNKS: Record<string, number[]> = CHUNKS_UNTYPED;
 
-async function fetch_maybe_gzip(url: string) {
+
+async function fetchMaybeChunked(url: string) {
+  const name = url.substring(url.lastIndexOf('/') + 1);
+  const entry = CHUNKS[name];
+  if (!entry) {
+    return fetch(url);
+  }
+
+  const buffers = await Promise.all([...new Array(entry.length)].map(async (_, i) => {
+    const chunkUrl = `${url}.${i}`;
+    return (await fetch(chunkUrl)).arrayBuffer();
+  }));
+  return new Response(new Blob(buffers));
+}
+async function fetchMaybeCompressed(url: string) {
   if (window.DecompressionStream) {
     for (const compression of COMPRESSIONS) {
       try {
         const decompressor = new DecompressionStream(compression);
-        const response = await fetch(`${url}.${compression}`);
+        const response = await fetchMaybeChunked(`${url}.${compression}`);
         const stream = response.body!.pipeThrough(decompressor);
         return new Response(stream, response).arrayBuffer();
       } catch (e) {
@@ -32,7 +48,7 @@ async function fetch_maybe_gzip(url: string) {
       }
     }
   }
-  return fetch(url).then(r => r.arrayBuffer());
+  return fetchMaybeChunked(url).then(r => r.arrayBuffer());
 }
 
 const terminal = new Terminal({
@@ -69,7 +85,7 @@ if (MINI) {
 
 (async () => {
 
-  const init = await fetch_maybe_gzip(MINI ? '/state-mini.bin' : '/state-full.bin');
+  const init = await fetchMaybeCompressed(MINI ? '/state-mini.bin' : '/state-full.bin');
   const emulator = new V86({
     wasm_path: v86wasm,
     bios: { url: v86bios, size: void 0 as unknown as number },

@@ -22,5 +22,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["src", "./v86/v86.d.ts"]
+  "include": ["src", "scripts", "./v86/v86.d.ts"]
 }
