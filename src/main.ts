@@ -40,11 +40,11 @@ const fitAddon = new FitAddon();
 const container = document.getElementById('app')!;
 terminal.loadAddon(fitAddon);
 terminal.open(container);
-fitAddon.fit();
-window.addEventListener('resize', () => fitAddon.fit());
-window.addEventListener('beforeunload', (event) => {
-  event.preventDefault();
-});
+if (!import.meta.env.DEV) {
+  window.addEventListener('beforeunload', (event) => {
+    event.preventDefault();
+  });
+}
 
 const FULL = false;
 
@@ -71,13 +71,14 @@ const FULL = false;
 
     serial_console: void 0 as unknown as { type: 'none' },
     virtio_console: void 0 as unknown as { type: 'none' },
-  });
+
+    uart1: true,
+  } as any);
   emulator.add_listener('serial0-output-byte', (byte: number) => {
     terminal.write(new Uint8Array([byte]));
   });
   terminal.onData((data) => {
     emulator.serial0_send(data);
-    console.log(data);
   });
   terminal.onBinary((data) => {
     const bytes = new Uint8Array(data.length);
@@ -90,6 +91,14 @@ const FULL = false;
   // order: ready -> run() -> started -> loaded -> (responsive) -> run "fg"
   emulator.add_listener('emulator-loaded', () => {
     emulator.serial0_send('fg\n');
+
+    function syncResize() {
+      fitAddon.fit();
+      const cmd = `stty -F /dev/ttyS0 cols ${terminal.cols} rows ${terminal.rows}\n`;
+      emulator.serial_send_bytes(1, new TextEncoder().encode(cmd));
+    }
+    syncResize();
+    window.addEventListener('resize', syncResize);
   });
   emulator.add_listener('emulator-ready', () => {
     if (!emulator.is_running()) {

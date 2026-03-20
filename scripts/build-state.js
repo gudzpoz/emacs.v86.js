@@ -54,6 +54,7 @@ var emulator = new V86({
         baseurl: V86_ROOT,
         basefs: V86_JSON,
     },
+    uart1: true,
 });
 
 console.log('Now booting, please stand by ...');

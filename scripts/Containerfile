@@ -39,11 +39,11 @@ RUN /usr/bin/emacs --batch -l $EMACS_INIT_FILE \
     || /usr/bin/emacs --batch -l $EMACS_INIT_FILE
 RUN apk --no-cache del $REMPKGS
 
-RUN sed -i 's/getty 38400 tty1/agetty --autologin root tty1 linux/' /etc/inittab
-RUN echo 'ttyS0::respawn:/sbin/agetty --autologin root -s ttyS0 115200 linux' >> /etc/inittab
-RUN echo "root:" | chpasswd
-
-RUN setup-hostname localhost
+RUN sed -i 's/getty 38400 tty1/agetty --autologin root tty1 linux/' /etc/inittab \
+    && echo 'ttyS0::respawn:/sbin/agetty --autologin root -s ttyS0 115200 linux' >> /etc/inittab \
+    && echo 'ttyS1::respawn:/sbin/agetty --autologin root -s ttyS1 115200 vt100' >> /etc/inittab \
+    && echo "root:" | chpasswd \
+    && setup-hostname localhost
 
 # Adding networking.sh script
 RUN echo -e "rmmod ne2k-pci && modprobe ne2k-pci\nrmmod virtio-net && modprobe virtio-net\nhwclock -s\nsetup-interfaces -a -r" > /root/networking.sh && chmod +x /root/networking.sh
