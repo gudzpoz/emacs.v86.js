@@ -1,3 +1,4 @@
+import debounce from 'debounce';
 import { V86 } from 'v86';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
@@ -8,7 +9,6 @@ import v86vgabios from '../v86/bios/vgabios.bin?url';
 
 import CHUNKS_UNTYPED from './states.json';
 import '@xterm/xterm/css/xterm.css';
-import './style.css';
 
 // Now that we use initialied states, this cmdline may not be needed.
 const CMDLINE = 'rw root=host9p rootfstype=9p'
@@ -51,8 +51,10 @@ async function fetchMaybeCompressed(url: string) {
   return fetchMaybeChunked(url).then(r => r.arrayBuffer());
 }
 
+
 const terminal = new Terminal({
   scrollback: 0,
+  fontSize: 12,
 });
 const fitAddon = new FitAddon();
 const container = document.getElementById('term')!;
@@ -64,28 +66,29 @@ if (!import.meta.env.DEV) {
   });
 }
 
-const MINI = location.search.includes('mini');
-const EMACS_Q = document.querySelector<HTMLInputElement>('#emacs-Q')!;
-const SPACEMACS = document.querySelector<HTMLInputElement>('#spacemacs')!;
-if (MINI) {
-  EMACS_Q.checked = true;
-  SPACEMACS.addEventListener('change', () => {
-    if (SPACEMACS.checked) {
-      location.search = '';
-    }
+
+const VARIANT_INPUTS = [
+  ...document.querySelectorAll<HTMLInputElement>('input[name="variant"]'),
+];
+const DEFAULT_VARIANT = VARIANT_INPUTS[0].value;
+const VARIANT = [
+  ...VARIANT_INPUTS
+    .filter((i) => location.search.includes(i.value))
+    .map((i) => i.value),
+  DEFAULT_VARIANT,
+][0];
+VARIANT_INPUTS.forEach((i) => {
+  if (i.value === VARIANT) {
+    i.checked = true;
+  }
+  i.addEventListener('change', () => {
+    location.search = i.value;
   });
-} else {
-  SPACEMACS.checked = true;
-  EMACS_Q.addEventListener('change', () => {
-    if (EMACS_Q.checked) {
-      location.search = 'mini';
-    }
-  });
-}
+});
 
 (async () => {
 
-  const init = await fetchMaybeCompressed(MINI ? '/state-mini.bin' : '/state-full.bin');
+  const init = await fetchMaybeCompressed(`/state-${VARIANT}.bin`);
   const emulator = new V86({
     wasm_path: v86wasm,
     bios: { url: v86bios, size: void 0 as unknown as number },
@@ -127,11 +130,11 @@ if (MINI) {
   emulator.add_listener('emulator-loaded', () => {
     emulator.serial0_send('fg\n');
 
-    function syncResize() {
+    const syncResize = debounce(() => {
       fitAddon.fit();
       const cmd = `stty -F /dev/ttyS0 cols ${terminal.cols} rows ${terminal.rows}\n`;
       emulator.serial_send_bytes(1, new TextEncoder().encode(cmd));
-    }
+    }, 500);
     syncResize();
     window.addEventListener('resize', syncResize);
   });

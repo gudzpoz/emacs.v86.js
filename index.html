@@ -5,6 +5,51 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Emacs Playground</title>
+    <style>
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
+
+#app {
+  width: 100%;
+  height: 100vh;
+  background-color: #262626;
+  color: #b2b2b2;
+}
+
+#head {
+  height: 2em;
+  padding: 0 4px;
+  overflow: auto hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-wrap: nowrap;
+  gap: 1em;
+}
+#head > * {
+  display: flex;
+  align-items: center;
+}
+#head a {
+  color: #b2b2b2;
+}
+a.logo {
+  text-decoration: none;
+}
+.logo img {
+  height: 1.6em;
+  margin-right: 4px;
+}
+
+#term {
+  padding: 0 4px;
+  height: calc(100% - 2em - 8px);
+}
+    </style>
   </head>
   <body>
     <div id="app">
@@ -15,12 +60,16 @@
         </a>
         <div>
           <label>
-            <input type="radio" name="mini" id="spacemacs" value="0">
-            Running Spacemacs
+            <input type="radio" name="variant" value="norm">
+            Running Emacs
           </label>
           <label>
-            <input type="radio" name="mini" id="emacs-Q" value="1">
+            <input type="radio" name="variant" value="mini">
             Running <code>emacs -Q</code>
+          </label>
+          <label>
+            <input type="radio" name="variant" value="full">
+            Running Spacemacs
           </label>
         </div>
         <div>

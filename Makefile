@@ -5,9 +5,10 @@ TAR_EXPORT=build/alpine-rootfs.tar
 FS_EXPORT=public/rootfs.json
 FS_DIR=public/rootfs
 STATE_MINI=public/state-mini.bin
+STATE_NORM=public/state-norm.bin
 STATE_FULL=public/state-full.bin
-STATES_GZIP=$(STATE_MINI).gzip $(STATE_FULL).gzip
-STATES_BROTLI=$(STATE_MINI).brotli $(STATE_FULL).brotli
+STATES_GZIP=$(STATE_MINI).gzip $(STATE_NORM).gzip $(STATE_FULL).gzip
+STATES_BROTLI=$(STATE_MINI).brotli $(STATE_NORM).brotli $(STATE_FULL).brotli
 STATES=$(STATE_MINI) $(STATE_FULL) $(STATES_GZIP) $(STATES_BROTLI)
 STATES_EXPORT=src/states.json
 
@@ -44,6 +45,11 @@ $(FS_EXPORT): $(TAR_EXPORT)
 $(STATE_MINI): $(FS_EXPORT) scripts/build-state.js
 	scripts/build-state.js "$<" "$(FS_DIR)" "$@" \
 		"$(EMACS_ENV) emacs -Q --daemon" \
+		"$(EMACS_ENV) emacsclient -c --eval \"(run-with-idle-timer 10 nil #'suspend-frame)\""
+
+$(STATE_NORM): $(FS_EXPORT) scripts/build-state.js
+	scripts/build-state.js "$<" "$(FS_DIR)" "$@" \
+		"$(EMACS_ENV) emacs -q --daemon" \
 		"$(EMACS_ENV) emacsclient -c --eval \"(run-with-idle-timer 10 nil #'suspend-frame)\""
 
 $(STATE_FULL): $(FS_EXPORT) scripts/build-state.js
