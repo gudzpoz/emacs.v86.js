@@ -24,7 +24,7 @@
 FROM docker.io/i386/alpine:3.23.0
 
 ENV KERNEL=virt
-ARG ADDPKGS="git emacs-nox"
+ARG ADDPKGS="git emacs-nox inotify-tools"
 ARG REMPKGS="git"
 ARG DOT_EMACS_D=build/spacemacs-develop
 ARG DOT_EMACS_SRC=build/dotspacemacs-template.el

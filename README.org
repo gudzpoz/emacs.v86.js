@@ -1,6 +1,20 @@
 #+title: emacs.v86.js
 
-Emacs on [[https://github.com/copy/v86][copy/v86]] in your browser.
+Emacs on [[https://github.com/copy/v86][copy/v86]] in your browser at [[https://play.emacsen.de/]].
+
+* What is it for?
+
+... [[https://justforfunnoreally.dev/][fun]]?
+
+* How's the performance?
+
+Try it yourself: it's slow.
+
+Running =M-x profiler-start/stop/report= shows that =read= takes the most time
+when opening an Org-mode file (which takes a minute). Since v86 will try to JIT
+compile things, I guess currently v86 can't handle those irregular control flows
+(=goto=) in =read= yet. But otherwise, for the non-Spacemacs versions, it seems
+OK when trying to run commands or switch themes.
 
 * Build
 
