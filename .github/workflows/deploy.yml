@@ -1,0 +1,44 @@
+name: Deploy site to Cloudflare Pages
+
+on:
+  push:
+    branches:
+      - 'main'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        name: Clone repo
+        with:
+          fetch-depth: 0
+          submodules: 'recursive'
+      - uses: actions/cache@v4
+        name: Cache products
+        with:
+          path: |
+            build/
+            public/
+          key: emacs-v86-images
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          cache: true
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build images
+        run: |
+          mkdir -p build
+          make all
+      - name: Build site
+        run: pnpm build
+
+      - uses: cloudflare/wrangler-action@v3
+        name: Deploy pages
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4.52.1"

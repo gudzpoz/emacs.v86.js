@@ -7,7 +7,30 @@
     <title>Emacs Playground</title>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <header id="head">
+        <a class="logo" href="https://doc.emacsen.de/" target="_blank">
+          <img class="logo" src="/favicon.svg" alt="Emacs logo">
+          Emacs Docs
+        </a>
+        <div>
+          <label>
+            <input type="radio" name="mini" id="spacemacs" value="0">
+            Running Spacemacs
+          </label>
+          <label>
+            <input type="radio" name="mini" id="emacs-Q" value="1">
+            Running <code>emacs -Q</code>
+          </label>
+        </div>
+        <div>
+          <a href="https://github.com/copy/v86" target="_blank">
+            Powered by v86
+          </a>
+        </div>
+      </header>
+      <div id="term"></div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

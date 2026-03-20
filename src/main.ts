@@ -35,9 +35,11 @@ async function fetch_maybe_gzip(url: string) {
   return fetch(url).then(r => r.arrayBuffer());
 }
 
-const terminal = new Terminal();
+const terminal = new Terminal({
+  scrollback: 0,
+});
 const fitAddon = new FitAddon();
-const container = document.getElementById('app')!;
+const container = document.getElementById('term')!;
 terminal.loadAddon(fitAddon);
 terminal.open(container);
 if (!import.meta.env.DEV) {
@@ -46,11 +48,28 @@ if (!import.meta.env.DEV) {
   });
 }
 
-const FULL = false;
+const MINI = location.search.includes('mini');
+const EMACS_Q = document.querySelector<HTMLInputElement>('#emacs-Q')!;
+const SPACEMACS = document.querySelector<HTMLInputElement>('#spacemacs')!;
+if (MINI) {
+  EMACS_Q.checked = true;
+  SPACEMACS.addEventListener('change', () => {
+    if (SPACEMACS.checked) {
+      location.search = '';
+    }
+  });
+} else {
+  SPACEMACS.checked = true;
+  EMACS_Q.addEventListener('change', () => {
+    if (EMACS_Q.checked) {
+      location.search = 'mini';
+    }
+  });
+}
 
 (async () => {
 
-  const init = await fetch_maybe_gzip(FULL ? '/state-full.bin' : '/state-mini.bin');
+  const init = await fetch_maybe_gzip(MINI ? '/state-mini.bin' : '/state-full.bin');
   const emulator = new V86({
     wasm_path: v86wasm,
     bios: { url: v86bios, size: void 0 as unknown as number },
