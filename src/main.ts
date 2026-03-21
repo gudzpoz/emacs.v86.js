@@ -75,6 +75,8 @@ if (!import.meta.env.DEV) {
 
 const PROGRESS = document.getElementById('progress')!;
 PROGRESS.textContent = '...';
+const INDICATOR_CPU = document.getElementById('cpu')!;
+const INDICATOR_FS = document.getElementById('fs')!;
 
 
 const VARIANT_SELECTOR = document.querySelector<HTMLSelectElement>('#variant')!;
@@ -157,6 +159,34 @@ QUESTION.addEventListener('click', () => {
     }
     emulator.serial_send_bytes(0, bytes);
   });
+
+  // Indicators:
+  emulator.add_listener('9p-read-start', () => {
+    INDICATOR_FS.style.color = 'cyan';
+  });
+  const restoreFSIndicator = debounce(() => {
+    INDICATOR_FS.style.color = 'inherit';
+  }, 100);
+  emulator.add_listener('9p-read-end', () => {
+    restoreFSIndicator();
+  });
+  emulator.add_listener('9p-write-end', () => {
+    INDICATOR_FS.style.color = 'red';
+    restoreFSIndicator();
+  });
+  const restoreCPUIndicator = debounce(() => {
+    INDICATOR_CPU.style.color = 'inherit';
+  }, 500);
+  let insCount = 0;
+  setInterval(() => {
+    const last = insCount;
+    insCount = emulator.get_instruction_counter();
+    // empirically:
+    if (insCount - last > 800_000) {
+      INDICATOR_CPU.style.color = 'orange';
+      restoreCPUIndicator();
+    }
+  }, 500);
 
   // order: ready -> run() -> started -> loaded -> (responsive) -> run "fg"
   emulator.add_listener('emulator-loaded', () => {
