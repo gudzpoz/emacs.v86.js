@@ -60,23 +60,18 @@ a.logo {
           Emacs Docs
         </a>
         <div>
-          <label>
-            <input type="radio" name="variant" value="norm">
-            Emacs
-          </label>
-          <label>
-            <input type="radio" name="variant" value="mini">
-            <code>emacs -Q</code>
-          </label>
-          <label>
-            <input type="radio" name="variant" value="full">
-            Spacemacs
-          </label>
+          <select id="variant">
+            <option value="norm">Emacs</option>
+            <option value="orgm">Org Mode</option>
+            <option value="mini"><code>emacs -Q</code></option>
+            <option value="full">Spacemacs</option>
+          </select>
           <label>
             <input type="checkbox" id="ctrl">
             <code>Ctrl</code>
           </label>
           <button id="question">?</button>
+          <button id="paste">📋</button>
         </div>
         <div>
           <a href="https://github.com/copy/v86" target="_blank">

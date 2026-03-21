@@ -2,6 +2,7 @@ import debounce from 'debounce';
 import { V86 } from 'v86';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
+import { Unicode11Addon } from '@xterm/addon-unicode11';
 import { controlChar } from './keys';
 
 import v86wasm from 'v86/build/v86.wasm?url';
@@ -54,12 +55,16 @@ async function fetchMaybeCompressed(url: string) {
 
 
 const terminal = new Terminal({
+  allowProposedApi: true,
   scrollback: 0,
   fontSize: 12,
 });
 const fitAddon = new FitAddon();
-const container = document.getElementById('term')!;
 terminal.loadAddon(fitAddon);
+const unicode11Addon = new Unicode11Addon();
+terminal.loadAddon(unicode11Addon);
+terminal.unicode.activeVersion = '11';
+const container = document.getElementById('term')!;
 terminal.open(container);
 if (!import.meta.env.DEV) {
   window.addEventListener('beforeunload', (event) => {
@@ -68,23 +73,16 @@ if (!import.meta.env.DEV) {
 }
 
 
-const VARIANT_INPUTS = [
-  ...document.querySelectorAll<HTMLInputElement>('input[name="variant"]'),
-];
-const DEFAULT_VARIANT = VARIANT_INPUTS[0].value;
-const VARIANT = [
-  ...VARIANT_INPUTS
-    .filter((i) => location.search.includes(i.value))
-    .map((i) => i.value),
-  DEFAULT_VARIANT,
+const VARIANT_SELECTOR = document.querySelector<HTMLSelectElement>('#variant')!;
+const VARIANTS = [...VARIANT_SELECTOR?.options].map((o) => o.value);
+const CURRENT_VARIANT = [
+  ...VARIANTS
+    .filter((i) => location.search.includes(i)),
+  VARIANTS[0],
 ][0];
-VARIANT_INPUTS.forEach((i) => {
-  if (i.value === VARIANT) {
-    i.checked = true;
-  }
-  i.addEventListener('change', () => {
-    location.search = i.value;
-  });
+VARIANT_SELECTOR.value = CURRENT_VARIANT;
+VARIANT_SELECTOR.addEventListener('change', () => {
+  location.search = VARIANT_SELECTOR.value;
 });
 
 
@@ -101,12 +99,13 @@ QUESTION.addEventListener('click', () => {
    So, instead, you might need to use the "Ctrl" checkbox
    in the header. You may press Ctrl to toggle it.
 `);
+  terminal.focus();
 });
 
 
 (async () => {
 
-  const init = await fetchMaybeCompressed(`/state-${VARIANT}.bin`);
+  const init = await fetchMaybeCompressed(`/state-${CURRENT_VARIANT}.bin`);
   const emulator = new V86({
     wasm_path: v86wasm,
     bios: { url: v86bios, size: void 0 as unknown as number },
@@ -146,8 +145,19 @@ QUESTION.addEventListener('click', () => {
 
   // order: ready -> run() -> started -> loaded -> (responsive) -> run "fg"
   emulator.add_listener('emulator-loaded', () => {
-    emulator.serial0_send('fg\n');
+    // We've send "fg" over when building the states, so let's trigger it:
+    emulator.serial0_send('\n');
+    terminal.focus();
+    initThings();
+  });
+  emulator.add_listener('emulator-ready', () => {
+    if (!emulator.is_running()) {
+      emulator.run();
+    }
+  });
 
+  function initThings() {
+    // Resizing:
     const syncResize = debounce(() => {
       fitAddon.fit();
       const cmd = `stty -F /dev/ttyS0 cols ${terminal.cols} rows ${terminal.rows}\n`;
@@ -156,10 +166,12 @@ QUESTION.addEventListener('click', () => {
     syncResize();
     window.addEventListener('resize', syncResize);
 
+    // Tons of hacks to pass keys correctly:
     let capturedDown: string | null = null;
     let lastIsCtrlDown = false;
     CTRL.addEventListener('change', () => terminal.focus());
     terminal.attachCustomKeyEventHandler((event) => {
+      // Ctrl assistance #1:
       if (event.key === 'Control') {
         if (event.type === 'keydown') {
           lastIsCtrlDown = true;
@@ -171,6 +183,7 @@ QUESTION.addEventListener('click', () => {
       }
       lastIsCtrlDown = false;
 
+      // Ctrl assistance #1:
       if (event.type === 'keydown' && CTRL.checked) {
         CTRL.checked = false;
         if (event.key.length === 1) {
@@ -191,11 +204,18 @@ QUESTION.addEventListener('click', () => {
 
       return true;
     });
-  });
-  emulator.add_listener('emulator-ready', () => {
-    if (!emulator.is_running()) {
-      emulator.run();
-    }
-  });
+
+    // Pasting:
+    const PASTE = document.getElementById('paste')!;
+    PASTE.addEventListener('click', () => {
+      const pasted = prompt(
+        'Xterm.js has trouble pasting Unicode texts. Paste texts here to send to the serial console:',
+      );
+      if (pasted) {
+        emulator.serial_send_bytes(0, new TextEncoder().encode(pasted));
+      }
+      terminal.focus();
+    });
+  }
 
 })();

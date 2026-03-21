@@ -29,7 +29,10 @@ import url from 'node:url';
 import { V86 } from 'v86';
 
 if (process.argv.length < 6) {
-    console.error(`Usage: ${process.argv[1]} <fs_json> <fs_root> <output_file> [cmds...]`);
+    console.error(`Usage: ${process.argv[1]} <fs_json> <fs_root> <output_file> [cmds...]
+
+Note that the last command will not be run and the user is expected
+to send a new line character after reloading to run it.`);
     process.exit(1);
 }
 
@@ -38,7 +41,7 @@ const V86_REPO = path.join(PROJECT, 'v86');
 const V86_JSON = process.argv[2];
 const V86_ROOT = process.argv[3];
 const OUTPUT_FILE = process.argv[4];
-const CMDS = process.argv.slice(5);
+const CMDS = process.argv.slice(5).map(cmd => cmd.replace(/\s+/g, ' '));
 
 var emulator = new V86({
     wasm_path: path.join(PROJECT, 'node_modules/v86/build/v86.wasm'),
@@ -88,11 +91,13 @@ function run(cmd) {
 await run('');
 console.log('Booted');
 
-for (const cmd of CMDS) {
+for (const cmd of CMDS.slice(0, -1)) {
     await run(cmd);
 }
 
 await run('sync;echo 3 >/proc/sys/vm/drop_caches');
+emulator.serial0_send(CMDS[CMDS.length - 1]);
+
 await new Promise((resolve) => setTimeout(resolve, 5 * 1000));
 
 const s = await emulator.save_state();

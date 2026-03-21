@@ -6,10 +6,12 @@ FS_EXPORT=public/rootfs.json
 FS_DIR=public/rootfs
 STATE_MINI=public/state-mini.bin
 STATE_NORM=public/state-norm.bin
+STATE_ORGM=public/state-orgm.bin
 STATE_FULL=public/state-full.bin
-STATES_GZIP=$(STATE_MINI).gzip $(STATE_NORM).gzip $(STATE_FULL).gzip
-STATES_BROTLI=$(STATE_MINI).brotli $(STATE_NORM).brotli $(STATE_FULL).brotli
-STATES=$(STATE_MINI) $(STATE_FULL) $(STATES_GZIP) $(STATES_BROTLI)
+STATE_BINS=$(STATE_MINI) $(STATE_NORM) $(STATE_ORGM) $(STATE_FULL)
+STATES_GZIP=$(STATE_BINS:=.gzip)
+STATES_BROTLI=$(STATE_BINS:=.brotli)
+STATES=$(STATE_BINS) $(STATES_GZIP) $(STATES_BROTLI)
 STATES_EXPORT=src/states.json
 
 SPACEMACS_URL=https://github.com/syl20bnr/spacemacs/archive/refs/heads/develop.zip
@@ -45,19 +47,30 @@ $(FS_EXPORT): $(TAR_EXPORT)
 $(STATE_MINI): $(FS_EXPORT) scripts/build-state.js
 	scripts/build-state.js "$<" "$(FS_DIR)" "$@" \
 		"$(EMACS_ENV) emacs -Q --daemon" \
-		"$(EMACS_ENV) emacsclient -c --eval \"(run-with-idle-timer 10 nil #'suspend-frame)\""
+		"$(EMACS_ENV) emacsclient -c --eval \"(run-with-idle-timer 10 nil #'suspend-frame)\"" \
+		"fg"
 
 $(STATE_NORM): $(FS_EXPORT) scripts/build-state.js
 	scripts/build-state.js "$<" "$(FS_DIR)" "$@" \
 		"$(EMACS_ENV) emacs -q --daemon" \
 		"$(EMACS_ENV) emacsclient -c \
 		  --eval \"(fancy-startup-screen)\" \
-		  --eval \"(run-with-idle-timer 10 nil #'suspend-frame)\""
+		  --eval \"(run-with-idle-timer 10 nil #'suspend-frame)\"" \
+		"fg"
+
+$(STATE_ORGM): $(FS_EXPORT) scripts/build-state.js
+	scripts/build-state.js "$<" "$(FS_DIR)" "$@" \
+		"$(EMACS_ENV) emacs -q --daemon" \
+		"$(EMACS_ENV) emacsclient -c \
+			--eval '(find-file \"/root/README.org\")' \
+			--eval \"(run-with-idle-timer 10 nil #'suspend-frame)\"" \
+		"fg"
 
 $(STATE_FULL): $(FS_EXPORT) scripts/build-state.js
 	scripts/build-state.js "$<" "$(FS_DIR)" "$@" \
 		"$(EMACS_ENV) emacs --daemon" \
-		"$(EMACS_ENV) emacsclient -c --eval \"(run-with-idle-timer 10 nil #'suspend-frame)\""
+		"$(EMACS_ENV) emacsclient -c --eval \"(run-with-idle-timer 10 nil #'suspend-frame)\"" \
+		"fg"
 
 # https://stackoverflow.com/a/76693814/17780636: use .gzip instead of .gz to avoid vite's bug
 public/state-%.bin.gzip: public/state-%.bin

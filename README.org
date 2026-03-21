@@ -14,11 +14,32 @@ Running =M-x profiler-start/stop/report= shows that =read= takes the most time
 when opening an Org-mode file (which takes a minute). Since v86 will try to JIT
 compile things, I guess currently v86 can't handle those irregular control flows
 (=goto=) in =read= yet. But otherwise, for the non-Spacemacs versions, it seems
-OK when trying to run commands or switch themes.
+OK when trying to run commands or switch themes as long as it doesn't load tons
+of files.
 
 * Build
 
-- Run =make= to generate all the needed files
-  (v86 file system & warmed-up state files).
+- Run =make= to generate all the needed files (v86 file system & warmed-up state
+  files).
 
 - Run =pnpm install= and then =pnpm build= to generate the site.
+
+* Adding new precomputed states
+
+Currently, it's impractical to load a new Emacs session afresh in the browser
+because it will take forever. Instead, we pre-load Emacs into a v86 session and
+dump the VM states to be directly loaded back into browser sessions.
+
+As is mentioned above, loading packages isn't fast in Emacs under v86, so if you
+think pre-loading some modes can be helpful (if any people at all uses this
+"playground", that is), you're welcome to do so by:
+
+- either modifying the states by editing =Makefile=,
+- or adding a new state by editing =Makefile= and the =<select>= element in
+  =index.html=.
+
+* Just a test
+
+(a testing section)
+
+Emojis! ✩°｡🧸𓏲⋆.🧺𖦹 ₊˚
