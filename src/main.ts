@@ -104,6 +104,8 @@ QUESTION.addEventListener('click', () => {
 1. Browsers prevent us from capturing Ctrl+q/n/t/w, etc.
    So, instead, you might need to use the "Ctrl" checkbox
    in the header. You may press Ctrl to toggle it.
+
+The source code is at https://github.com/gudzpoz/emacs.v86.js
 `);
   terminal.focus();
 });
