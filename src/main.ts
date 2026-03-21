@@ -73,6 +73,10 @@ if (!import.meta.env.DEV) {
 }
 
 
+const PROGRESS = document.getElementById('progress')!;
+PROGRESS.textContent = '...';
+
+
 const VARIANT_SELECTOR = document.querySelector<HTMLSelectElement>('#variant')!;
 const VARIANTS = [...VARIANT_SELECTOR?.options].map((o) => o.value);
 const CURRENT_VARIANT = [
@@ -105,11 +109,17 @@ QUESTION.addEventListener('click', () => {
 
 (async () => {
 
-  const init = await fetchMaybeCompressed(`/state-${CURRENT_VARIANT}.bin`);
+  PROGRESS.textContent = 'Loading VM state...';
+  const [bios, vgabios, init] = await Promise.all([
+    fetch(v86bios).then(r => r.arrayBuffer()),
+    fetch(v86vgabios).then(r => r.arrayBuffer()),
+    fetchMaybeCompressed(`/state-${CURRENT_VARIANT}.bin`),
+  ]);
+
   const emulator = new V86({
     wasm_path: v86wasm,
-    bios: { url: v86bios, size: void 0 as unknown as number },
-    vga_bios: { url: v86vgabios, size: void 0 as unknown as number },
+    bios: { buffer: bios },
+    vga_bios: { buffer: vgabios },
     autostart: false,
     memory_size: 512 * 1024 * 1024,
     vga_memory_size: 8 * 1024 * 1024,
@@ -129,8 +139,13 @@ QUESTION.addEventListener('click', () => {
 
     uart1: true,
   } as any);
+  let acc = 0;
   emulator.add_listener('serial0-output-byte', (byte: number) => {
     terminal.write(new Uint8Array([byte]));
+    acc++;
+    if (acc > 256) {
+      PROGRESS.textContent = '';
+    }
   });
   terminal.onData((data) => {
     emulator.serial0_send(data);
@@ -146,12 +161,14 @@ QUESTION.addEventListener('click', () => {
   // order: ready -> run() -> started -> loaded -> (responsive) -> run "fg"
   emulator.add_listener('emulator-loaded', () => {
     // We've send "fg" over when building the states, so let's trigger it:
+    PROGRESS.textContent = 'Restoring Emacs...';
     emulator.serial0_send('\n');
     terminal.focus();
     initThings();
   });
   emulator.add_listener('emulator-ready', () => {
     if (!emulator.is_running()) {
+      PROGRESS.textContent = 'Starting VM...';
       emulator.run();
     }
   });
