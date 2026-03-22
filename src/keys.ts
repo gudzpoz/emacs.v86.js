@@ -5,6 +5,8 @@ const UNDERSCORE = '_'.charCodeAt(0);
 const LOWER_A = 'a'.charCodeAt(0);
 const LOWER_Z = 'z'.charCodeAt(0);
 
+export const XTERM_SKIPPED_KEYS = ';:-_=+';
+
 export function controlChar(c: number) {
   if ((AT <= c && c <= UNDERSCORE) || (LOWER_A <= c && c <= LOWER_Z)) {
     return c & 0x1F;

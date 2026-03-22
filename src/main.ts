@@ -3,7 +3,7 @@ import { V86 } from 'v86';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { Unicode11Addon } from '@xterm/addon-unicode11';
-import { controlChar } from './keys';
+import { controlChar, XTERM_SKIPPED_KEYS } from './keys';
 
 import v86wasm from 'v86/build/v86.wasm?url';
 import v86bios from '../v86/bios/seabios.bin?url';
@@ -232,12 +232,11 @@ The source code is at https://github.com/gudzpoz/emacs.v86.js
       }
       lastIsCtrlDown = false;
 
-      // Ctrl assistance #1:
+      // Ctrl assistance #2:
       if (event.type === 'keydown' && CTRL.checked) {
         CTRL.checked = false;
         if (event.key.length === 1) {
           const escaped = controlChar(event.key.charCodeAt(0));
-          console.log(escaped);
           emulator.serial_send_bytes(0, new Uint8Array([escaped]));
           capturedDown = event.key;
           return false;
@@ -249,6 +248,24 @@ The source code is at https://github.com/gudzpoz/emacs.v86.js
       if (event.type === 'keyup' && capturedDown === event.key) {
         capturedDown = null;
         return false;
+      }
+
+      // Modifier + ; or : etc.
+      if (XTERM_SKIPPED_KEYS.includes(event.key)) {
+        if (event.ctrlKey || event.altKey) {
+          if (event.type === 'keydown') {
+            const ctrl = event.ctrlKey || CTRL.checked;
+            CTRL.checked = false;
+            let key = event.key.charCodeAt(0);
+            if (ctrl) {
+              key = controlChar(key);
+            }
+            emulator.serial_send_bytes(0, new Uint8Array(
+              event.altKey ? [0x1b, key] : [key],
+            ));
+          }
+          return false;
+        }
       }
 
       return true;
