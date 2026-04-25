@@ -25,6 +25,7 @@ EMACS_ENV=$(TERM_ENV)
 all: $(FS_EXPORT) $(STATES) $(STATES_EXPORT)
 
 $(SPACEMACS):
+	mkdir -p build
 	wget -O "$@" "$(SPACEMACS_URL)"
 	unzip -o "$@" -d build/
 
@@ -32,7 +33,6 @@ $(DOT_SPACEMACS): $(SPACEMACS)
 	cp "$(SPACEMACS_DIR)/core/templates/dotspacemacs-template.el" "$@"
 
 $(TAR_EXPORT): $(SPACEMACS) $(DOT_SPACEMACS) scripts/Containerfile
-	mkdir -p build
 	podman build -f scripts/Containerfile . --platform linux/386 --rm --tag "$(IMAGE_NAME)"
 	podman rm "$(CONTAINER_NAME)" || true
 	podman create --platform linux/386 -it --name "$(CONTAINER_NAME)" "$(IMAGE_NAME)"
