@@ -149,11 +149,17 @@ redirect_dir=off,index=off,xino=off,metacopy=off /home/user`,
     : [];
   let emulator = await start();
   async function listenTo(e: Pty) {
-    for await (const bytes of e.output) {
-      if (e !== emulator) {
-        return;
+    const reader = e.output.getReader();
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done || e !== emulator) {
+          break;
+        }
+        terminal.write(value);
       }
-      terminal.write(bytes);
+    } finally {
+      reader.releaseLock();
     }
   }
   async function start() {
