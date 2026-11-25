@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-// Split an EROFS image into <=20 MiB chunks in OUT_DIR (within Cloudflare
-// Pages' 25 MiB per-file limit) and write its chunk manifest JSON to
+// Split an EROFS image into <=1 MiB chunks in OUT_DIR (small enough to fetch
+// whole without HTTP Range requests on Cloudflare Workers Static Assets, and
+// well within the 25 MiB per-file limit) and write its chunk manifest JSON to
 // MANIFEST_JSON (e.g. src/alpine.erofs.json).
 //
 // Usage: node scripts/chunk-unkernel.mjs <INPUT_EROFS> <MANIFEST_JSON> [OUT_DIR]
@@ -8,8 +9,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-const CHUNK_SIZE = 20 * 1024 * 1024;    // 20 MiB (block- and 1 MiB prefetch-aligned)
-const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MiB Cloudflare Pages limit
+const CHUNK_SIZE = 1 * 1024 * 1024;     // 1 MiB (block- and prefetch-aligned)
+const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MiB Cloudflare per-file limit
 
 const [inputArg, manifestArg, outDirArg] = process.argv.slice(2);
 if (!inputArg || !manifestArg) {

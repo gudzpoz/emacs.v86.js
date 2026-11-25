@@ -41,6 +41,7 @@ const restoreFSIndicator = debounce(() => {
   INDICATOR_FS.style.color = 'inherit';
 }, 100);
 
+const CHUNK_SIZE = 1 * 1024 * 1024;
 const rawFetch = window.fetch;
 const CHUNKS: Record<string, typeof ALPINE> = Object.fromEntries([
   ALPINE,
@@ -50,34 +51,56 @@ const CHUNKS: Record<string, typeof ALPINE> = Object.fromEntries([
 ].map(spec => [spec.file, spec]));
 window.fetch = async (input, init) => {
   if (typeof input === 'string' && CHUNKS[input]) {
-    const range = (init?.headers as unknown as { range?: string }).range;
+    const { size, chunks } = CHUNKS[input];
+    const range = new Headers(init?.headers).get('range');
+    let absStart = 0;
+    let absEnd = size;
+    let isRange = false;
     if (range && range.startsWith('bytes=')) {
-      const [absStart, absLast] = range.substring('bytes='.length).split('-').map(
-        (s) => parseInt(s, 10),
-      );
-      const absEnd = absLast + 1;
+      const [startStr, lastStr] = range.substring('bytes='.length).split('-');
+      absStart = parseInt(startStr, 10);
+      absEnd = lastStr ? Math.min(parseInt(lastStr, 10) + 1, size) : size;
+      isRange = true;
+    }
 
-      INDICATOR_FS.style.color = 'cyan';
-
-      const { size, chunks }= CHUNKS[input];
-      const blob = new Blob(await Promise.all(chunks.flatMap(({ file, start, end }) => {
-        if (absEnd <= start || absStart >= end) {
-          return [];
+    INDICATOR_FS.style.color = 'cyan';
+    try {
+      const overlapping = chunks.filter(({ start, end }) => absEnd > start && absStart < end);
+      const parts = await Promise.all(overlapping.map(async ({ file, start, end }) => {
+        const res = await rawFetch(`/unkernel/${file}`);
+        if (!res.ok) {
+          throw new Error(`Failed to fetch /unkernel/${file}: HTTP ${res.status}`);
         }
-        const relStart = absStart - start;
-        const relEnd = absEnd - start;
-        const initChunk = { ...init! };
-        initChunk.headers = { ...init!.headers as object };
-        initChunk.headers['range'] = `bytes=${Math.max(0, relStart)}-${Math.min(relEnd, end - start) - 1}`;
-        return [rawFetch(`/unkernel/${file}`, initChunk).then(res => res.bytes())];
-      })));
+        const data = await res.bytes();
+        const sliceStart = Math.max(0, absStart - start);
+        const sliceEnd = Math.min(end - start, absEnd - start);
+        return data.subarray(sliceStart, sliceEnd);
+      }));
 
-      restoreFSIndicator();
+      const out = new Uint8Array(Math.max(0, absEnd - absStart));
+      let offset = 0;
+      for (const part of parts) {
+        out.set(part, offset);
+        offset += part.length;
+      }
 
-      return new Response(blob, {
-        status: 206,
-        headers: { 'content-range': `bytes ${absStart}-${absLast}/${size}` },
+      if (isRange) {
+        return new Response(out, {
+          status: 206,
+          headers: {
+            'content-length': String(out.length),
+            'content-range': `bytes ${absStart}-${absEnd - 1}/${size}`,
+          },
+        });
+      }
+      return new Response(out, {
+        status: 200,
+        headers: {
+          'content-length': String(out.length),
+        },
       });
+    } finally {
+      restoreFSIndicator();
     }
   }
   return rawFetch(input, init);
@@ -123,6 +146,7 @@ QUESTION.addEventListener('click', () => {
     distro: {
       kind: 'http',
       url: ALPINE.file,
+      chunkSize: CHUNK_SIZE,
     },
     disks: [
       CURRENT_VARIANT === 'doom' ? DOOM
@@ -131,6 +155,7 @@ QUESTION.addEventListener('click', () => {
     ].map((spec) => ({
       kind: 'http',
       url: spec.file,
+      chunkSize: CHUNK_SIZE,
     })),
     net: wispBackend(DEFAULT_WISP_SERVERS),
   });
