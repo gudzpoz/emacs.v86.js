@@ -52,6 +52,28 @@ a.logo {
   padding: 0 4px;
   height: calc(100% - 2em - 8px);
 }
+
+#explorer {
+  display: none;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: auto;
+  background-color: #262626;
+  color: #b2b2b2;
+  opacity: 0.9;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+#explorer > * {
+  margin: 1em;
+}
+#explorer a {
+  color: #92b2b2;
+}
     </style>
   </head>
   <body>
@@ -78,12 +100,22 @@ a.logo {
           </label>
           <button id="question">?</button>
           <button id="paste">📋</button>
+          <button id="open">📁</button>
         </div>
         <div>
           <a href="https://github.com/gudzpoz/emacs.v86.js">GitHub Repo</a>
         </div>
       </header>
       <div id="term"></div>
+    </div>
+    <div id="explorer">
+      <div>
+        <button id="upload">📤</button>
+        <label>Path: <input id="path" type="text"></label>
+        <button id="go">Go</button>
+        <button id="exit">Quit</button>
+      </div>
+      <ul id="entries"></ul>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

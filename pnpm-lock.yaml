@@ -20,10 +20,16 @@ importers:
       debounce:
         specifier: ^3.0.0
         version: 3.0.0
+      downloadjs:
+        specifier: ^1.4.7
+        version: 1.4.7
       unkernel:
         specifier: 0.2.0-261123-8f039c5
         version: 0.2.0-261123-8f039c5
     devDependencies:
+      '@types/downloadjs':
+        specifier: ^1.4.6
+        version: 1.4.6
       typescript:
         specifier: ~5.9.3
         version: 5.9.3
@@ -149,6 +155,9 @@ packages:
   '@tybys/wasm-util@0.10.1':
     resolution: {integrity: sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg==}
 
+  '@types/downloadjs@1.4.6':
+    resolution: {integrity: sha512-mp3w70vsaiLRT9ix92fmI9Ob2yJAPZm6tShJtofo2uHbN11G2i6a0ApIEjBl/kv3e9V7Pv7jMjk1bUwYWvMHvA==}
+
   '@xterm/addon-fit@0.11.0':
     resolution: {integrity: sha512-jYcgT6xtVYhnhgxh3QgYDnnNMYTcf8ElbxxFzX0IZo+vabQqSPAjC3c1wJrKB5E19VwQei89QCiZZP86DCPF7g==}
 
@@ -165,6 +174,9 @@ packages:
   detect-libc@2.1.2:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
+
+  downloadjs@1.4.7:
+    resolution: {integrity: sha512-LN1gO7+u9xjU5oEScGFKvXhYf7Y/empUIIEAGBs1LzUq/rg5duiDrkuH5A2lQGd5jfMOb9X9usDa2oVXwJ0U/Q==}
 
   fdir@6.5.0:
     resolution: {integrity: sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==}
@@ -420,6 +432,8 @@ snapshots:
       tslib: 2.8.1
     optional: true
 
+  '@types/downloadjs@1.4.6': {}
+
   '@xterm/addon-fit@0.11.0': {}
 
   '@xterm/addon-unicode11@0.9.0': {}
@@ -429,6 +443,8 @@ snapshots:
   debounce@3.0.0: {}
 
   detect-libc@2.1.2: {}
+
+  downloadjs@1.4.7: {}
 
   fdir@6.5.0(picomatch@4.0.3):
     optionalDependencies:

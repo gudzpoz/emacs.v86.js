@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@types/downloadjs": "^1.4.6",
     "typescript": "~5.9.3",
     "vite": "^8.0.1"
   },
@@ -17,6 +18,7 @@
     "@xterm/addon-unicode11": "^0.9.0",
     "@xterm/xterm": "^6.0.0",
     "debounce": "^3.0.0",
+    "downloadjs": "^1.4.7",
     "unkernel": "0.2.0-261123-8f039c5"
   }
 }

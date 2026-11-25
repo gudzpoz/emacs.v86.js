@@ -12,6 +12,7 @@ import NORMAL from './readme.erofs.json';
 import DOOM from './doom.erofs.json';
 import SPACEMACS from './spacemacs.erofs.json';
 import '@xterm/xterm/css/xterm.css';
+import download from 'downloadjs';
 
 
 const terminal = new Terminal({
@@ -258,6 +259,78 @@ redirect_dir=off,index=off,xino=off,metacopy=off /home/user`,
       emulator.write(new TextEncoder().encode(pasted));
     }
     terminal.focus();
+  });
+
+  // Files:
+  const EXPLORER = document.getElementById('explorer')!;
+  const OPEN = document.getElementById('open')!;
+  OPEN.addEventListener('click', () => EXPLORER.style.display = 'flex');
+  const EXIT = document.getElementById('exit')!;
+  EXIT.addEventListener('click', () => EXPLORER.style.display = 'none');
+  const PATH = document.getElementById('path')! as HTMLInputElement;
+  const ENTRIES = document.getElementById('entries')!;
+  function normalize(path: string) {
+    const url = new URL(path, 'http://example.com');
+    return url.pathname.replace(/\/+/g, '/');
+  }
+  let currentDir = '/';
+  async function updatePath(path?: string) {
+    let dir = path ?? PATH.value;
+    dir = normalize(`${dir}/`);
+    const res = (await vm.exec('ls', ['-ap', '--', dir], { encoding: 'utf8' }));
+    if (res.exitCode !== 0) {
+      alert(res.stderr);
+      return;
+    }
+    PATH.value = dir;
+    currentDir = dir;
+    ENTRIES.innerHTML = '';
+    res.stdout.trim().split('\n').forEach(entry => {
+      const li = document.createElement('li');
+      const file = `${dir}${entry}`;
+      if (entry.endsWith('/')) {
+        const a = document.createElement('a');
+        a.href = '#';
+        a.innerText = entry;
+        a.addEventListener('click', () => updatePath(file));
+        li.appendChild(a);
+      } else {
+        const button = document.createElement('button');
+        button.innerText = '📥';
+        button.addEventListener('click', async () => {
+          const cat = await vm.exec('cat', ['--', file], { encoding: 'buffer', user: 0 });
+          download(cat.stdout, entry);
+        });
+        li.appendChild(button);
+        li.appendChild(document.createTextNode(entry));
+      }
+      ENTRIES.appendChild(li);
+    });
+  }
+  updatePath('/home/user');
+  const GO = document.getElementById('go')!;
+  GO.addEventListener('click', () => updatePath());
+
+  const UPLOAD = document.getElementById('upload')!;
+  UPLOAD.addEventListener('click', async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.onchange = async () => {
+      if (!input.files) {
+        return;
+      }
+      await Promise.all([...input.files].map(async (f) => {
+        const file = `${currentDir}${f.name}`;
+        await vm.exec('tee', ['--', file], {
+          input: await f.bytes(),
+          user: 0,
+        });
+        await vm.exec('chown', ['1000:1000', file], { user: 0 });
+      }));
+      updatePath(currentDir);
+    };
+    input.click();
   });
 
 })();
