@@ -94,14 +94,12 @@ CTRL.checked = false;
 
 const QUESTION = document.getElementById('question')!;
 QUESTION.addEventListener('click', () => {
-  alert(`An Emacs playground running on v86 in your browser.
+  alert(`An Emacs playground running on unkernel in your browser.
 
-0. v86 runs a virtual machine, so expect it to be slow.
 1. Browsers prevent us from capturing Ctrl+q/n/t/w, etc.
    So, instead, you might need to use the "Ctrl" checkbox
    in the header. You may press Ctrl to toggle it.
-
-The source code is at https://github.com/gudzpoz/emacs.v86.js
+2. If you want mouse support, run M-x xterm-mouse-mode.
 `);
   terminal.focus();
 });
@@ -117,6 +115,7 @@ The source code is at https://github.com/gudzpoz/emacs.v86.js
     },
   });
 
+  const args = CURRENT_VARIANT === 'mini' ? ['-Q'] : [];
   let emulator = await start();
   async function listenTo(e: Pty) {
     for await (const bytes of e.output) {
@@ -127,7 +126,7 @@ The source code is at https://github.com/gudzpoz/emacs.v86.js
     }
   }
   async function start() {
-    const e= await vm.spawn('emacs', [], {
+    const e= await vm.spawn('emacs', args, {
       cols: terminal.cols,
       rows: terminal.cols,
       term: 'xterm-256color',

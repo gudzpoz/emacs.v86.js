@@ -1,42 +1,29 @@
 #+title: emacs.v86.js
 
-Emacs on [[https://github.com/copy/v86][copy/v86]] in your browser at [[https://play.emacsen.de/]].
+Emacs in your browser at [[https://play.emacsen.de/]].
+
+Originally on [[https://github.com/copy/v86][copy/v86]],
+migrated to [[https://github.com/pithings/unkernel][unkernel]] for performance.
 
 * What is it for?
 
 ... [[https://justforfunnoreally.dev/][fun]]?
+(And I also might want to use it for interactive Lisp execution
+on [[https://doc.emacsen.de][doc.emacsen.de]].)
 
 * How's the performance?
 
-Try it yourself: it's slow.
-
-Running =M-x profiler-start/stop/report= shows that =read= takes the most time
-when opening an Org-mode file (which takes a minute). Since v86 will try to JIT
-compile things, I guess currently v86 can't handle those irregular control flows
-(=goto=) in =read= yet. But otherwise, for the non-Spacemacs versions, it seems
-OK when trying to run commands or switch themes as long as it doesn't load tons
-of files.
+Try it yourself: it's slow but not too slow now.
 
 * Build
 
-- Run =make= to generate all the needed files (v86 file system & warmed-up state
-  files).
+- Run =make= to generate all the needed files (unkernel root file system & home directory mounts).
 
 - Run =pnpm install= and then =pnpm build= to generate the site.
 
-* Adding new precomputed states
+* Adding =.emacs.d= images
 
-Currently, it's impractical to load a new Emacs session afresh in the browser
-because it will take forever. Instead, we pre-load Emacs into a v86 session and
-dump the VM states to be directly loaded back into browser sessions.
-
-As is mentioned above, loading packages isn't fast in Emacs under v86, so if you
-think pre-loading some modes can be helpful (if any people at all uses this
-"playground", that is), you're welcome to do so by:
-
-- either modifying the states by editing =Makefile=,
-- or adding a new state by editing =Makefile= and the =<select>= element in
-  =index.html=.
+To be documented.
 
 * Just a test
 
