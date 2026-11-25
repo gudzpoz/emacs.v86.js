@@ -3,7 +3,6 @@
 // public/unkernel/ (within Cloudflare Pages' 25 MiB per-file limit), and copy
 // distros.json + unkernel.wasm alongside a JSON chunk manifest.
 
-import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -45,7 +44,6 @@ const stat = await fs.stat(imagePath);
 const totalSize = stat.size;
 const imageId = (await fs.readFile(idPath, 'utf8')).trim();
 
-const fullHash = createHash('sha256');
 const chunks = [];
 const fd = await fs.open(imagePath, 'r');
 try {
@@ -58,11 +56,9 @@ try {
     if (read !== want) {
       throw new Error(`Short read on ${imagePath} at offset ${offset}: got ${read}, expected ${want}`);
     }
-    fullHash.update(buffer);
-    const chunkHash = createHash('sha256').update(buffer).digest('hex');
     const chunkFile = `${imageFile}.${index}`;
     await fs.writeFile(path.join(OUT_DIR, chunkFile), buffer);
-    chunks.push({ file: chunkFile, size: read, sha256: chunkHash });
+    chunks.push({ file: chunkFile, start: offset, end: offset + read });
     offset += read;
     index++;
   }
@@ -72,10 +68,7 @@ try {
 
 const manifest = {
   file: imageFile,
-  image: imageId,
   size: totalSize,
-  sha256: fullHash.digest('hex'),
-  chunkSize: CHUNK_SIZE,
   chunks,
 };
 

@@ -20,9 +20,9 @@ importers:
       debounce:
         specifier: ^3.0.0
         version: 3.0.0
-      v86:
-        specifier: ^0.5.319
-        version: 0.5.319
+      unkernel:
+        specifier: 0.2.0-261123-8f039c5
+        version: 0.2.0-261123-8f039c5
     devDependencies:
       typescript:
         specifier: ~5.9.3
@@ -291,8 +291,10 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
-  v86@0.5.319:
-    resolution: {integrity: sha512-OsAGtpDYexAFTfIXf9iMh+JM6IK1GRahWZG3ghNEHtzCxQnyCXQOnN4m5fwV+b5cD0Yj97x8EpsloDtSIpcidA==}
+  unkernel@0.2.0-261123-8f039c5:
+    resolution: {integrity: sha512-bxKaZ9H3dLI2ZVXLwcGBLLGLU2QMQmNWIovYkWIbWXOEBCMW4kksAmVVWSkLEVy59vfMUA7RYeAneTM+NGp2wg==}
+    engines: {node: '>=24'}
+    hasBin: true
 
   vite@8.0.1:
     resolution: {integrity: sha512-wt+Z2qIhfFt85uiyRt5LPU4oVEJBXj8hZNWKeqFG4gRG/0RaRGJ7njQCwzFVjO+v4+Ipmf5CY7VdmZRAYYBPHw==}
@@ -529,7 +531,7 @@ snapshots:
 
   typescript@5.9.3: {}
 
-  v86@0.5.319: {}
+  unkernel@0.2.0-261123-8f039c5: {}
 
   vite@8.0.1:
     dependencies:

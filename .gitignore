@@ -1,6 +1,7 @@
 # build outputs
 build/
 public/unkernel/
+src/*.json
 
 # Logs
 logs

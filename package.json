@@ -17,6 +17,6 @@
     "@xterm/addon-unicode11": "^0.9.0",
     "@xterm/xterm": "^6.0.0",
     "debounce": "^3.0.0",
-    "v86": "^0.5.319"
+    "unkernel": "0.2.0-261123-8f039c5"
   }
 }
