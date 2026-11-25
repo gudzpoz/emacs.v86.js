@@ -35,7 +35,7 @@ echo "Installing Doom Emacs using $rt (docker.io/alpine:edge)..."
 	apk add --no-cache emacs-nox git ripgrep
 	export HOME=/home/user
 	git clone --depth 1 "$DOOM_REPO" /home/user/.emacs.d
-	/home/user/.emacs.d/bin/doom install --force --no-fonts --no-env --no-hooks \
+	/home/user/.emacs.d/bin/doom install --force --no-env \
 		|| /home/user/.emacs.d/bin/doom sync --force \
 		|| /home/user/.emacs.d/bin/doom sync --force
 	find /home/user/.emacs.d -name .git -type d -prune -exec rm -rf {} +

@@ -1,5 +1,5 @@
 import debounce from 'debounce';
-import { createKernel, type Pty } from 'unkernel';
+import { createKernel, DEFAULT_WISP_SERVERS, wispBackend, type Pty } from 'unkernel';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { Unicode11Addon } from '@xterm/addon-unicode11';
@@ -8,6 +8,9 @@ import { controlChar, XTERM_SKIPPED_KEYS } from './keys';
 import UNKERNEL_WASM from 'unkernel/unkernel.wasm?url';
 
 import ALPINE from './alpine.erofs.json';
+import NORMAL from './readme.erofs.json';
+import DOOM from './doom.erofs.json';
+import SPACEMACS from './spacemacs.erofs.json';
 import '@xterm/xterm/css/xterm.css';
 
 
@@ -15,6 +18,7 @@ const terminal = new Terminal({
   allowProposedApi: true,
   scrollback: 0,
   fontSize: 12,
+  fontFamily: '"FiraCode Nerd Font", monospace',
 });
 const fitAddon = new FitAddon();
 terminal.loadAddon(fitAddon);
@@ -29,7 +33,8 @@ if (!import.meta.env.DEV) {
   });
 }
 
-
+const PROGRESS = document.getElementById('progress')!;
+PROGRESS.textContent = '...';
 const INDICATOR_FS = document.getElementById('fs')!;
 const restoreFSIndicator = debounce(() => {
   INDICATOR_FS.style.color = 'inherit';
@@ -38,7 +43,10 @@ const restoreFSIndicator = debounce(() => {
 const rawFetch = window.fetch;
 const CHUNKS: Record<string, typeof ALPINE> = Object.fromEntries([
   ALPINE,
-].map(spec => [spec.file, ALPINE]));
+  NORMAL,
+  DOOM,
+  SPACEMACS,
+].map(spec => [spec.file, spec]));
 window.fetch = async (input, init) => {
   if (typeof input === 'string' && CHUNKS[input]) {
     const range = (init?.headers as unknown as { range?: string }).range;
@@ -59,7 +67,7 @@ window.fetch = async (input, init) => {
         const relEnd = absEnd - start;
         const initChunk = { ...init! };
         initChunk.headers = { ...init!.headers as object };
-        initChunk.headers['range'] = `bytes=${Math.max(0, relStart)}-${Math.min(relEnd, end) - 1}`;
+        initChunk.headers['range'] = `bytes=${Math.max(0, relStart)}-${Math.min(relEnd, end - start) - 1}`;
         return [rawFetch(`/unkernel/${file}`, initChunk).then(res => res.bytes())];
       })));
 
@@ -107,15 +115,37 @@ QUESTION.addEventListener('click', () => {
 
 (async () => {
 
+  PROGRESS.textContent = 'Loading VM state...';
+
   const vm = await createKernel({
     kernel: UNKERNEL_WASM,
     distro: {
       kind: 'http',
       url: ALPINE.file,
     },
+    disks: [
+      CURRENT_VARIANT === 'doom' ? DOOM
+      : CURRENT_VARIANT === 'spac' ? SPACEMACS
+      : NORMAL
+    ].map((spec) => ({
+      kind: 'http',
+      url: spec.file,
+    })),
+    net: wispBackend(DEFAULT_WISP_SERVERS),
   });
 
-  const args = CURRENT_VARIANT === 'mini' ? ['-Q'] : [];
+  await vm.exec('sh', ['-c', [
+    'mkdir -p /mnt/home-ro /tmp/home-ov/upper /tmp/home-ov/work',
+    'chown 1000:1000 /tmp/home-ov/upper',
+    'mount -t erofs -o ro /dev/wdb /mnt/home-ro',
+    `mount -t overlay overlay -o \
+lowerdir=/mnt/home-ro,upperdir=/tmp/home-ov/upper,workdir=/tmp/home-ov/work,\
+redirect_dir=off,index=off,xino=off,metacopy=off /home/user`,
+  ].join(' && ')], { user: 0 });
+
+  const args = CURRENT_VARIANT === 'mini' ? ['-Q']
+    : CURRENT_VARIANT === 'orgm' ? ['/home/user/README.org']
+    : [];
   let emulator = await start();
   async function listenTo(e: Pty) {
     for await (const bytes of e.output) {
@@ -128,7 +158,7 @@ QUESTION.addEventListener('click', () => {
   async function start() {
     const e= await vm.spawn('emacs', args, {
       cols: terminal.cols,
-      rows: terminal.cols,
+      rows: terminal.rows,
       term: 'xterm-256color',
       env: { COLORTERM: 'truecolor', LANG: 'C.UTF-8' },
     });
@@ -140,6 +170,8 @@ QUESTION.addEventListener('click', () => {
     });
     return e;
   }
+
+  PROGRESS.textContent = '';
 
   terminal.onData((data) => {
     emulator.write(data);
