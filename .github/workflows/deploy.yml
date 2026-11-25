@@ -12,10 +12,10 @@ on:
         default: false
 
 jobs:
-  build-unkernel-alpine:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         name: Clone repo
         with:
           submodules: 'recursive'
@@ -25,7 +25,7 @@ jobs:
         run: |
           echo "unkernel_sha=$(git -C unkernel rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         name: Setup Node.js
         with:
           node-version: '24'
@@ -43,7 +43,7 @@ jobs:
           fi
 
       - name: Cache unkernel toolchain and downloads
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             unkernel/vendor/downloads
@@ -56,7 +56,7 @@ jobs:
       - name: Restore built unkernel images
         id: image-cache
         if: ${{ !inputs.rebuild_unkernel }}
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           path: |
             build/unkernel-distro
@@ -71,7 +71,7 @@ jobs:
 
       - name: Save built unkernel images
         if: ${{ !inputs.rebuild_unkernel && steps.image-cache.outputs.cache-hit != 'true' }}
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           path: |
             build/unkernel-distro
@@ -92,11 +92,27 @@ jobs:
             cat "$f"
           done
 
-      - uses: actions/upload-artifact@v4
-        name: Upload unkernel assets
+      - uses: pnpm/action-setup@v4
         with:
-          name: unkernel-alpine
-          path: |
-            public/unkernel/
-            src/*.erofs.json
-          retention-days: 7
+          version: 10
+          cache: true
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build site
+        run: pnpm build
+
+      - name: Verify dist file sizes
+        run: |
+          if find dist -type f -size 25M | grep -q .; then
+            echo "::error::Found file(s) in dist/ exceeding Cloudflare Pages 25 MiB limit"
+            exit 1
+          fi
+
+      - uses: cloudflare/wrangler-action@v3
+        name: Deploy pages
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4.52.1"
