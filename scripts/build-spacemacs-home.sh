@@ -48,9 +48,9 @@ echo "Installing Spacemacs packages using $rt (docker.io/alpine:edge)..."
 	grep -q "/community" /etc/apk/repositories || echo "https://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories
 	apk add --no-cache emacs-nox git
 	export HOME=/home/user
-	/usr/bin/emacs --batch -l /home/user/.emacs.d/init.el \
-		|| /usr/bin/emacs --batch -l /home/user/.emacs.d/init.el \
-		|| /usr/bin/emacs --batch -l /home/user/.emacs.d/init.el
+	/usr/bin/emacs --batch -l /home/user/.emacs.d/early-init.el -l /home/user/.emacs.d/init.el \
+		|| /usr/bin/emacs --batch -l /home/user/.emacs.d/early-init.el -l /home/user/.emacs.d/init.el \
+		|| /usr/bin/emacs --batch -l /home/user/.emacs.d/early-init.el -l /home/user/.emacs.d/init.el
 	rm -rf /home/user/.emacs.d/.git
 	chown -R "$owner" /home/user
 '

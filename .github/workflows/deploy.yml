@@ -87,7 +87,7 @@ jobs:
             echo "::error::Found file(s) exceeding Cloudflare Pages 25 MiB limit"
             exit 1
           fi
-          for f in src/alpine.erofs.json src/spacemacs.erofs.json src/readme.erofs.json; do
+          for f in src/alpine.erofs.json src/spacemacs.erofs.json src/doom.erofs.json src/readme.erofs.json; do
             echo "=== $f ==="
             cat "$f"
           done

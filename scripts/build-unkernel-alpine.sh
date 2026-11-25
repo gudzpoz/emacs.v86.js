@@ -17,7 +17,7 @@ export KW_DISTRO_OUT="${KW_DISTRO_OUT:-$REPO_ROOT/build/unkernel-distro}"
 export KW_DISTRO_FORMATS="${KW_DISTRO_FORMATS:-erofs}"
 export KW_DISTRO_DIR="$UNKERNEL_DIR/guest/distro/alpine"
 
-ALPINE_EXTRA_PKGS="${ALPINE_EXTRA_PKGS:-emacs-nox emacs-doc}"
+ALPINE_EXTRA_PKGS="${ALPINE_EXTRA_PKGS:-emacs-nox emacs-doc git ripgrep}"
 KW_VM_MEM="${KW_VM_MEM:-1536}"
 KW_VM_TIMEOUT="${KW_VM_TIMEOUT:-900}"
 
