@@ -1,89 +1,15 @@
-CONTAINER_NAME=alpine-v86
-IMAGE_NAME=i386/alpine-v86
+UNKERNEL_EROFS=build/unkernel-distro/alpine.erofs
+UNKERNEL_MANIFEST=public/unkernel/alpine.erofs.json
 
-TAR_EXPORT=build/alpine-rootfs.tar
-FS_EXPORT=public/rootfs.json
-FS_DIR=public/rootfs
-STATE_MINI=public/state-mini.bin
-STATE_NORM=public/state-norm.bin
-STATE_ORGM=public/state-orgm.bin
-STATE_FULL=public/state-full.bin
-STATE_BINS=$(STATE_MINI) $(STATE_NORM) $(STATE_ORGM) $(STATE_FULL)
-STATES_GZIP=$(STATE_BINS:=.gzip)
-STATES_BROTLI=$(STATE_BINS:=.brotli)
-STATES=$(STATE_BINS) $(STATES_GZIP) $(STATES_BROTLI)
-STATES_EXPORT=src/states.json
+all: $(UNKERNEL_MANIFEST)
 
-SPACEMACS_URL=https://github.com/syl20bnr/spacemacs/archive/refs/heads/develop.zip
-SPACEMACS=build/spacemacs.zip
-SPACEMACS_DIR=build/spacemacs-develop
-DOT_SPACEMACS=build/dotspacemacs-template.el
+$(UNKERNEL_EROFS): scripts/build-unkernel-alpine.sh
+	scripts/build-unkernel-alpine.sh
 
-TERM_ENV=LANG=C.UTF-8 COLORTERM=truecolor
-EMACS_ENV=$(TERM_ENV)
+$(UNKERNEL_MANIFEST): $(UNKERNEL_EROFS) scripts/chunk-unkernel.mjs
+	node scripts/chunk-unkernel.mjs
 
-all: $(FS_EXPORT) $(STATES) $(STATES_EXPORT)
+clean:
+	rm -rf build/unkernel-distro public/unkernel
 
-$(SPACEMACS):
-	wget -O "$@" "$(SPACEMACS_URL)"
-	unzip -o "$@" -d build/
-
-$(DOT_SPACEMACS): $(SPACEMACS)
-	cp "$(SPACEMACS_DIR)/core/templates/dotspacemacs-template.el" "$@"
-
-$(TAR_EXPORT): $(SPACEMACS) $(DOT_SPACEMACS) scripts/Containerfile
-	mkdir -p build
-	podman build -f scripts/Containerfile . --platform linux/386 --rm --tag "$(IMAGE_NAME)"
-	podman rm "$(CONTAINER_NAME)" || true
-	podman create --platform linux/386 -it --name "$(CONTAINER_NAME)" "$(IMAGE_NAME)"
-	podman export "$(CONTAINER_NAME)" -o "$@"
-	tar -f "$(TAR_EXPORT)" --delete ".dockerenv" || true
-
-$(FS_EXPORT): $(TAR_EXPORT)
-	mkdir -p "$(FS_DIR)"
-	v86/tools/fs2json.py --out "$@" "$<"
-	v86/tools/copy-to-sha256.py "$<" "$(FS_DIR)"
-
-$(STATE_MINI): $(FS_EXPORT) scripts/build-state.js
-	scripts/build-state.js "$<" "$(FS_DIR)" "$@" \
-		"$(EMACS_ENV) emacs -Q --daemon" \
-		"$(EMACS_ENV) emacsclient -c --eval \"(run-with-idle-timer 10 nil #'suspend-frame)\"" \
-		"fg"
-
-$(STATE_NORM): $(FS_EXPORT) scripts/build-state.js
-	scripts/build-state.js "$<" "$(FS_DIR)" "$@" \
-		"$(EMACS_ENV) emacs -q --daemon" \
-		"$(EMACS_ENV) emacsclient -c \
-		  --eval \"(fancy-startup-screen)\" \
-		  --eval \"(run-with-idle-timer 10 nil #'suspend-frame)\"" \
-		"fg"
-
-$(STATE_ORGM): $(FS_EXPORT) scripts/build-state.js
-	scripts/build-state.js "$<" "$(FS_DIR)" "$@" \
-		"$(EMACS_ENV) emacs -q --daemon" \
-		"$(EMACS_ENV) emacsclient -c \
-			--eval '(find-file \"/root/README.org\")' \
-			--eval \"(run-with-idle-timer 10 nil #'suspend-frame)\"" \
-		"fg"
-
-$(STATE_FULL): $(FS_EXPORT) scripts/build-state.js
-	scripts/build-state.js "$<" "$(FS_DIR)" "$@" \
-		"$(EMACS_ENV) emacs --daemon" \
-		"$(EMACS_ENV) emacsclient -c --eval \"(run-with-idle-timer 10 nil #'suspend-frame)\"" \
-		"fg"
-
-# https://stackoverflow.com/a/76693814/17780636: use .gzip instead of .gz to avoid vite's bug
-public/state-%.bin.gzip: public/state-%.bin
-	gzip -f -k -S .gzip "$<"
-
-public/state-%.bin.brotli: public/state-%.bin
-	brotli -f --best --suffix=.brotli "$<"
-
-$(STATES_EXPORT): $(STATES) scripts/split-states.js
-	scripts/split-states.js "$@" $^
-
-# Remove files larger than 25 MB after chunking
-prepare-cf: $(STATES_EXPORT)
-	find public -type f -size +25M -exec rm {} \;
-
-.PHONY: all prepare-cf
+.PHONY: all clean

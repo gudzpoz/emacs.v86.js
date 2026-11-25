@@ -5,45 +5,92 @@ on:
     branches:
       - 'main'
     paths-ignore:
-      - 'README.md'
+      - 'README.org'
+  workflow_dispatch:
+    inputs:
+      rebuild_unkernel:
+        description: Force rebuilding the unkernel Alpine image (bypass image cache)
+        type: boolean
+        default: false
 
 jobs:
-  deploy:
+  build-unkernel-alpine:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         name: Clone repo
         with:
           submodules: 'recursive'
-      - name: restore timestamps
-        uses: chetan/git-restore-mtime-action@v2
-      - uses: actions/cache@v4
-        name: Cache products
+
+      - name: Read unkernel submodule revision
+        id: meta
+        run: |
+          echo "unkernel_sha=$(git -C unkernel rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        name: Setup Node.js
+        with:
+          node-version: '24'
+
+      - uses: mlugg/setup-zig@v2
+        name: Setup Zig
+        with:
+          version: 0.16.0
+
+      - name: Ensure host tools
+        run: |
+          if ! command -v zstd >/dev/null || ! command -v patch >/dev/null; then
+            sudo apt-get update -q
+            sudo apt-get install -y -q --no-install-recommends zstd patch
+          fi
+
+      - name: Cache unkernel toolchain and downloads
+        uses: actions/cache@v4
         with:
           path: |
-            build/
-            public/
-          key: emacs-v86-images
+            unkernel/vendor/downloads
+            unkernel/vendor/toolchain/erofs-utils
+            build/unkernel-base
+          key: unkernel-tools-${{ runner.os }}-${{ steps.meta.outputs.unkernel_sha }}-zig-0.16.0
+          restore-keys: |
+            unkernel-tools-${{ runner.os }}-${{ steps.meta.outputs.unkernel_sha }}-
 
-      - uses: pnpm/action-setup@v4
+      - name: Restore built unkernel Alpine image
+        id: image-cache
+        if: ${{ !inputs.rebuild_unkernel }}
+        uses: actions/cache/restore@v4
         with:
-          version: 10
-          cache: true
-      - name: Install dependencies
-        run: pnpm install
+          path: |
+            build/unkernel-distro
+            public/unkernel
+          key: unkernel-alpine-${{ runner.os }}-${{ steps.meta.outputs.unkernel_sha }}-${{ hashFiles('scripts/build-unkernel-alpine.sh', 'scripts/chunk-unkernel.mjs') }}
 
-      - name: Build images
-        run: |
-          mkdir -p build
-          make all
-      - name: Build site
-        run: |
-          make prepare-cf
-          pnpm build
+      - name: Build and chunk unkernel Alpine image
+        if: ${{ steps.image-cache.outputs.cache-hit != 'true' }}
+        run: make all
 
-      - uses: cloudflare/wrangler-action@v3
-        name: Deploy pages
+      - name: Save built unkernel Alpine image
+        if: ${{ !inputs.rebuild_unkernel && steps.image-cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
         with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerVersion: "4.52.1"
+          path: |
+            build/unkernel-distro
+            public/unkernel
+          key: ${{ steps.image-cache.outputs.cache-primary-key }}
+
+      - name: Verify outputs
+        run: |
+          ls -lh public/unkernel/
+          if find public/unkernel -type f -size +25M | grep -q .; then
+            echo "::error::Found file(s) exceeding Cloudflare Pages 25 MiB limit"
+            exit 1
+          fi
+          cat public/unkernel/distros.json
+          cat public/unkernel/alpine.erofs.json
+
+      - uses: actions/upload-artifact@v4
+        name: Upload unkernel Alpine assets
+        with:
+          name: unkernel-alpine
+          path: public/unkernel/
+          retention-days: 7

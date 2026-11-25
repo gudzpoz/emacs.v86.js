@@ -1,11 +1,6 @@
-# v86 build files
+# build outputs
 build/
-public/rootfs/
-public/rootfs.json
-public/state-*.bin
-public/state-*.bin.*
-src/states.json
-UT_ROOTFS_TAR
+public/unkernel/
 
 # Logs
 logs

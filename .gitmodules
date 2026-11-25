@@ -1,3 +1,6 @@
 [submodule "v86"]
 	path = v86
 	url = https://github.com/copy/v86.git
+[submodule "unkernel"]
+	path = unkernel
+	url = https://github.com/pithings/unkernel.git
