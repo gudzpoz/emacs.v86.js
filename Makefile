@@ -1,15 +1,35 @@
-UNKERNEL_EROFS=build/unkernel-distro/alpine.erofs
-UNKERNEL_MANIFEST=public/unkernel/alpine.erofs.json
+ALPINE_EROFS=build/unkernel-distro/alpine.erofs
+SPACEMACS_EROFS=build/unkernel-home/spacemacs.erofs
+README_EROFS=build/unkernel-home/readme.erofs
 
-all: $(UNKERNEL_MANIFEST)
+ALPINE_MANIFEST=src/alpine.erofs.json
+SPACEMACS_MANIFEST=src/spacemacs.erofs.json
+README_MANIFEST=src/readme.erofs.json
 
-$(UNKERNEL_EROFS): scripts/build-unkernel-alpine.sh
+all: $(ALPINE_MANIFEST) $(SPACEMACS_MANIFEST) $(README_MANIFEST)
+
+$(ALPINE_EROFS): scripts/build-unkernel-alpine.sh
 	scripts/build-unkernel-alpine.sh
 
-$(UNKERNEL_MANIFEST): $(UNKERNEL_EROFS) scripts/chunk-unkernel.mjs
-	node scripts/chunk-unkernel.mjs
+$(SPACEMACS_EROFS): scripts/build-spacemacs-home.sh scripts/mk-home-erofs.sh README.org
+	scripts/build-spacemacs-home.sh "$@"
+
+$(README_EROFS): README.org scripts/mk-home-erofs.sh
+	rm -rf build/unkernel-home/readme-root
+	mkdir -p build/unkernel-home/readme-root
+	cp README.org build/unkernel-home/readme-root/README.org
+	scripts/mk-home-erofs.sh build/unkernel-home/readme-root "$@" kwreadme
+
+src/alpine.erofs.json: $(ALPINE_EROFS) scripts/chunk-unkernel.mjs
+	node scripts/chunk-unkernel.mjs "$<" "$@" public/unkernel
+
+src/spacemacs.erofs.json: $(SPACEMACS_EROFS) scripts/chunk-unkernel.mjs
+	node scripts/chunk-unkernel.mjs "$<" "$@" public/unkernel
+
+src/readme.erofs.json: $(README_EROFS) scripts/chunk-unkernel.mjs
+	node scripts/chunk-unkernel.mjs "$<" "$@" public/unkernel
 
 clean:
-	rm -rf build/unkernel-distro public/unkernel
+	rm -rf build/unkernel-distro build/unkernel-home public/unkernel src/*.erofs.json
 
 .PHONY: all clean

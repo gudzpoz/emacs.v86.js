@@ -4,12 +4,10 @@ on:
   push:
     branches:
       - 'main'
-    paths-ignore:
-      - 'README.org'
   workflow_dispatch:
     inputs:
       rebuild_unkernel:
-        description: Force rebuilding the unkernel Alpine image (bypass image cache)
+        description: Force rebuilding the unkernel images (bypass image cache)
         type: boolean
         default: false
 
@@ -39,9 +37,9 @@ jobs:
 
       - name: Ensure host tools
         run: |
-          if ! command -v zstd >/dev/null || ! command -v patch >/dev/null; then
+          if ! command -v zstd >/dev/null || ! command -v patch >/dev/null || ! command -v unzip >/dev/null; then
             sudo apt-get update -q
-            sudo apt-get install -y -q --no-install-recommends zstd patch
+            sudo apt-get install -y -q --no-install-recommends zstd patch unzip
           fi
 
       - name: Cache unkernel toolchain and downloads
@@ -55,27 +53,31 @@ jobs:
           restore-keys: |
             unkernel-tools-${{ runner.os }}-${{ steps.meta.outputs.unkernel_sha }}-
 
-      - name: Restore built unkernel Alpine image
+      - name: Restore built unkernel images
         id: image-cache
         if: ${{ !inputs.rebuild_unkernel }}
         uses: actions/cache/restore@v4
         with:
           path: |
             build/unkernel-distro
+            build/unkernel-home
             public/unkernel
-          key: unkernel-alpine-${{ runner.os }}-${{ steps.meta.outputs.unkernel_sha }}-${{ hashFiles('scripts/build-unkernel-alpine.sh', 'scripts/chunk-unkernel.mjs') }}
+            src/*.erofs.json
+          key: unkernel-images-${{ runner.os }}-${{ steps.meta.outputs.unkernel_sha }}-${{ hashFiles('scripts/**', 'Makefile', 'README.org') }}
 
-      - name: Build and chunk unkernel Alpine image
+      - name: Build and chunk unkernel images
         if: ${{ steps.image-cache.outputs.cache-hit != 'true' }}
         run: make all
 
-      - name: Save built unkernel Alpine image
+      - name: Save built unkernel images
         if: ${{ !inputs.rebuild_unkernel && steps.image-cache.outputs.cache-hit != 'true' }}
         uses: actions/cache/save@v4
         with:
           path: |
             build/unkernel-distro
+            build/unkernel-home
             public/unkernel
+            src/*.erofs.json
           key: ${{ steps.image-cache.outputs.cache-primary-key }}
 
       - name: Verify outputs
@@ -85,12 +87,16 @@ jobs:
             echo "::error::Found file(s) exceeding Cloudflare Pages 25 MiB limit"
             exit 1
           fi
-          cat public/unkernel/distros.json
-          cat public/unkernel/alpine.erofs.json
+          for f in src/alpine.erofs.json src/spacemacs.erofs.json src/readme.erofs.json; do
+            echo "=== $f ==="
+            cat "$f"
+          done
 
       - uses: actions/upload-artifact@v4
-        name: Upload unkernel Alpine assets
+        name: Upload unkernel assets
         with:
           name: unkernel-alpine
-          path: public/unkernel/
+          path: |
+            public/unkernel/
+            src/*.erofs.json
           retention-days: 7
